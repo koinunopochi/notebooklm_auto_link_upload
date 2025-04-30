@@ -5,7 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // CSVファイル選択時の処理
   const csvFileInput = document.getElementById('csvFileInput');
   const fileInfoDiv = document.getElementById('fileInfo');
-  const csvContentTextarea = document.getElementById('csvContent');
+  const csvPreviewDiv = document.getElementById('csvPreview');
+  const csvPreviewHeader = document.getElementById('csvPreviewHeader');
+  const csvPreviewBody = document.getElementById('csvPreviewBody');
 
   if (csvFileInput) {
     csvFileInput.addEventListener('change', function(event) {
@@ -27,16 +29,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
               }
 
-              // CSVの内容をプレビュー表示
-              const previewContent = results.data
-                .slice(0, 5) // 最初の5行のみ表示
-                .map(row => Object.values(row).join(','))
-                .join('\n');
-              
-              csvContentTextarea.value = previewContent;
+              // ヘッダー行を表示
+              const headers = results.meta.fields;
+              let headerHtml = '<tr>';
+              headers.forEach(header => {
+                headerHtml += `<th>${header}</th>`;
+              });
+              headerHtml += '</tr>';
+              csvPreviewHeader.innerHTML = headerHtml;
+
+              // データ行を表示（最初の5行のみ）
+              let bodyHtml = '';
+              results.data.slice(0, 5).forEach(row => {
+                bodyHtml += '<tr>';
+                headers.forEach(header => {
+                  bodyHtml += `<td>${row[header] || ''}</td>`;
+                });
+                bodyHtml += '</tr>';
+              });
+              csvPreviewBody.innerHTML = bodyHtml;
+
+              // プレビューを表示
+              csvPreviewDiv.style.display = 'block';
               
               // ヘッダー行を取得してカラム名の候補を表示
-              const headers = results.meta.fields;
               if (headers && headers.length > 0) {
                 const columnNameInput = document.getElementById('columnName');
                 if (!columnNameInput.value || columnNameInput.value === 'URL') {
@@ -47,13 +63,19 @@ document.addEventListener('DOMContentLoaded', function() {
                   }
                 }
               }
+            },
+            error: function(error) {
+              showStatus(`CSVファイルの解析中にエラーが発生しました: ${error.message}`, 'error');
             }
           });
+        };
+        reader.onerror = function() {
+          showStatus('ファイルの読み込み中にエラーが発生しました', 'error');
         };
         reader.readAsText(file);
       } else {
         fileInfoDiv.textContent = 'ファイルが選択されていません';
-        csvContentTextarea.value = '';
+        csvPreviewDiv.style.display = 'none';
       }
     });
   }
@@ -95,6 +117,9 @@ function saveSettings() {
     }, function() {
       showStatus('設定を保存しました', 'success');
     });
+  };
+  reader.onerror = function() {
+    showStatus('ファイルの読み込み中にエラーが発生しました', 'error');
   };
   reader.readAsText(csvFile);
 }
