@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 results.meta.fields.unshift('is_success');
               }
 
+              // 既存のデータを上書きして新しいCSVデータを設定
               window.csvData = results;
               updatePreview();
               saveCSVData(); // ファイル選択後すぐにデータを保存
@@ -147,8 +148,7 @@ function addIsSuccessColumn(data) {
 function saveCSVData() {
   if (!window.csvData) return;
   
-  // PapaParseの結果オブジェクトをそのままunparseに渡す
-  // header: true オプションは不要 (オブジェクト内にヘッダー情報が含まれているため)
+  // 既存のCSVデータを上書きして保存
   const csvString = Papa.unparse(window.csvData);
   
   chrome.storage.local.set({
@@ -198,6 +198,7 @@ function loadSettings() {
             results.meta.fields.unshift('is_success');
           }
 
+          // 既存のデータを上書きして新しいCSVデータを設定
           window.csvData = results;
           updatePreview();
           
