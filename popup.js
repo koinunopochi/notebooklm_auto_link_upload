@@ -38,6 +38,12 @@ if (csvFileInput) {
                 statusDiv.textContent = '';
                 statusDiv.className = '';
 
+                // 設定を読み込む
+                chrome.storage.local.get(['columnName'], function(result) {
+                    const columnName = result.columnName || 'URL';
+                    columnNameInput.value = columnName;
+                });
+
                 chrome.runtime.sendMessage({ type: 'FILE_SELECTED_PING', fileName: file.name }, (response) => {
                     if (chrome.runtime.lastError) {
                         // Optional: Handle ping error silently or display a non-critical warning
@@ -277,3 +283,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (urlListTextArea) urlListTextArea.focus();
     enableUI(); // Ensure UI is enabled on load
 });
+
+// 設定画面を開くボタンを追加
+const openOptionsButton = document.createElement('button');
+openOptionsButton.textContent = '設定を開く';
+openOptionsButton.style.marginTop = '10px';
+openOptionsButton.addEventListener('click', () => {
+    chrome.runtime.openOptionsPage();
+});
+document.body.appendChild(openOptionsButton);

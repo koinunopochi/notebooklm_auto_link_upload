@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NotebookLM URL Uploader - 設定</title>
+  <meta charset="UTF-8">
+  <style>
+    body { 
+      width: 600px; 
+      font-family: sans-serif; 
+      padding: 20px;
+      margin: 0 auto;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    .section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 5px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="text"], textarea, input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 150px;
+      resize: vertical;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background-color: #dff0d8;
+      color: #3c763d;
+      border: 1px solid #d6e9c6;
+    }
+    .error {
+      background-color: #f2dede;
+      color: #a94442;
+      border: 1px solid #ebccd1;
+    }
+    .file-info {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NotebookLM URL Uploader 設定</h1>
+    
+    <div class="section">
+      <h2>CSV設定</h2>
+      <label for="columnName">URL列の名前:</label>
+      <input type="text" id="columnName" value="URL" placeholder="デフォルト: URL">
+      
+      <label for="csvFileInput">CSVファイルをアップロード:</label>
+      <input type="file" id="csvFileInput" accept=".csv">
+      <div id="fileInfo" class="file-info">ファイルが選択されていません</div>
+      
+      <label for="csvContent">CSVプレビュー:</label>
+      <textarea id="csvContent" readonly placeholder="CSVファイルをアップロードすると、ここに内容が表示されます"></textarea>
+      
+      <button id="saveSettings">設定を保存</button>
+    </div>
+
+    <div class="section">
+      <h2>URL処理設定</h2>
+      <label for="urlPatterns">URLパターン（改行区切り）:</label>
+      <textarea id="urlPatterns" placeholder="処理するURLのパターンを1行に1つずつ入力してください"></textarea>
+      
+      <button id="saveUrlPatterns">URLパターンを保存</button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <script src="papaparse.min.js"></script>
+  <script src="options.js"></script>
+</body>
+</html> 
