@@ -4,17 +4,23 @@
   <title>NotebookLM URL Uploader</title>
   <meta charset="UTF-8">
   <style>
-    body { width: 300px; font-family: sans-serif; padding: 10px; }
-    textarea { width: 95%; height: 150px; margin-bottom: 10px; border: 1px solid #ccc; }
-    button { width: 100%; padding: 8px; margin-bottom: 10px;}
-    #status {
-        margin-top: 5px;
-        font-size: 0.9em;
-        min-height: 1.2em;
-        padding: 5px;
-        border: 1px solid transparent; /*
-        border-radius: 3px; */
-        word-wrap: break-word;
+    body { width: 350px; font-family: sans-serif; padding: 10px; }
+    label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em;}
+    input[type="text"], input[type="file"], textarea {
+        width: 95%; padding: 6px; margin-top: 2px; margin-bottom: 10px;
+        border: 1px solid #ccc; box-sizing: border-box;
+    }
+    textarea { height: 100px; }
+    button { width: 100%; padding: 10px; margin-bottom: 10px; cursor: pointer;}
+    button:disabled { cursor: not-allowed; opacity: 0.6; }
+    #stopButton { background-color: #dc3545; color: white; }
+    #stopButton:disabled { background-color: #dc3545; }
+    hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
+     #status {
+        padding: 8px;
+        margin-top: 10px;
+        border: 1px solid transparent;
+        border-radius: 4px;
      }
      #status.error {
          border-color: #f5c6cb;
@@ -26,15 +32,36 @@
         background-color: #d4edda;
         color: #155724;
      }
+     .file-info {
+         font-size: 0.85em;
+         color: #666;
+         margin-top: -5px;
+         margin-bottom: 10px;
+     }
   </style>
 </head>
 <body>
   <h4>Upload URLs to NotebookLM</h4>
-  <p>Enter URLs (one per line, or separated by comma, semicolon, tab):</p>
-  <textarea id="urlList" placeholder="https://example.com/page1&#10;https://example.com/page2, https://example.com/page3"></textarea>
-  <button id="startButton">Start Upload Process</button>
+
+  <hr>
+  <label for="csvFileInput">1. Select CSV File:</label>
+  <input type="file" id="csvFileInput" accept=".csv">
+  <div id="fileInfo" class="file-info">No file selected.</div>
+
+  <label for="columnNameInput">2. Column Name for URLs:</label>
+  <input type="text" id="columnNameInput" value="URL">
+
+  <button id="startButton">Start Upload from CSV</button>
+  <button id="stopButton" style="display: none;">Stop Processing</button>
+  <hr>
+
+  <label for="urlList">Or Paste URLs/HTML:</label>
+  <textarea id="urlList" placeholder="Paste URLs (separated by newline, comma, etc.) or HTML content here..."></textarea>
+  <button id="startTextHtmlButton">Start Upload from Text/HTML</button>
+
   <div id="status"></div>
 
+  <script src="papaparse.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

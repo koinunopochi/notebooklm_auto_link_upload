@@ -1,226 +1,173 @@
-// --- ヘルパー関数群 (ログ強化版) ---
-
+// --- Helper Functions (to be injected) ---
 function clickAddSourceButtonOnPage() {
-    const buttonSelector = "button[aria-label='ソースを追加']";
-    console.log('[NotebookLM Extension] Step 1 Func: Finding button:', buttonSelector);
+    const buttonSelector = "button[aria-label='ソースを追加'], button[aria-label='Add source']";
     const button = document.querySelector(buttonSelector);
     if (button) {
-        console.log('[NotebookLM Extension] Step 1 Func: Found button:', button);
-        if (button.disabled) {
-             console.warn('[NotebookLM Extension] Step 1 Func: Button IS DISABLED.');
-             return 'Error: "Add Source" button is disabled.';
-        }
-        try {
-             button.click();
-             return "Add Source button clicked!";
-        } catch (e) {
-             console.error('[NotebookLM Extension] Step 1 Func: Click Error!', e);
-             return `Error clicking Add Source: ${e.message}`;
-        }
-    } else {
-        console.error(`[NotebookLM Extension] Step 1 Func: Button NOT FOUND with selector: ${buttonSelector}`);
-        return 'Error: "Add Source" button not found.';
-    }
+         if (button.disabled) return 'Error: "Add Source" button is disabled.';
+         try { button.click(); return "Add Source button clicked!"; }
+         catch (e) { return `Error clicking Add Source: ${e.message}`; }
+    } else { return 'Error: "Add Source" button not found.'; }
 }
 
 function clickWebsiteChipOnPage() {
-    const xpath = "//mat-chip[.//span[normalize-space(.)='ウェブサイト']]";
-    console.log('[NotebookLM Extension] Step 2 Func: Finding chip via XPath:', xpath);
+    const xpath = "//mat-chip[.//span[normalize-space(.)='ウェブサイト' or normalize-space(.)='Website']]";
     try {
-        const findElementByXPath = (xpathToExecute) => {
-             const result = document.evaluate(xpathToExecute, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-             return result.singleNodeValue;
-        };
-        const chip = findElementByXPath(xpath);
+        const chip = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
         if (chip) {
-            console.log('[NotebookLM Extension] Step 2 Func: Found chip:', chip);
-             if (typeof chip.click === 'function') {
-                 try {
-                     chip.click();
-                     return "Website chip clicked!";
-                 } catch (e) {
-                      console.error('[NotebookLM Extension] Step 2 Func: Click Error!', e);
-                      return `Error clicking Website chip: ${e.message}`;
-                 }
-             } else {
-                 console.error('[NotebookLM Extension] Step 2 Func: Found element is not clickable.', chip);
-                 return 'Error: Found "Website" element but cannot click.';
-             }
-        } else {
-            console.error(`[NotebookLM Extension] Step 2 Func: Chip NOT FOUND with XPath: ${xpath}`);
-            return 'Error: "Website" chip not found.';
-        }
-    } catch (e) {
-        console.error('[NotebookLM Extension] Step 2 Func: XPath/Find Error!', e);
-        return `Error finding Website chip: ${e.message}`;
-    }
+             try { chip.click(); return "Website chip clicked!"; }
+             catch (e) { return `Error clicking Website chip: ${e.message}`; }
+        } else { return 'Error: "Website" chip not found.'; }
+    } catch (e) { return `Error finding Website chip: ${e.message}`; }
 }
 
 function fillUrlInputOnPage(urlToFill) {
     const inputSelector = "input[formcontrolname='newUrl']";
-    const submitButtonSelector = "website-upload button.submit-button[type='submit']"; // セレクタを 'website-upload' で限定
-    console.log(`[NotebookLM Extension] Step 3 Func: Finding input: ${inputSelector} for URL: ${urlToFill}`);
+    const submitButtonSelector = "website-upload button.submit-button[type='submit']";
     const inputElement = document.querySelector(inputSelector);
     if (inputElement) {
-        console.log('[NotebookLM Extension] Step 3 Func: Found input field:', inputElement);
         try {
             inputElement.value = urlToFill;
             inputElement.dispatchEvent(new Event('input', { bubbles: true }));
             inputElement.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log(`[NotebookLM Extension] Step 3 Func: Dispatched input/change events.`);
-            // フォーカス処理
             const submitButton = document.querySelector(submitButtonSelector);
-            if (submitButton) {
-                submitButton.focus();
-                console.log('[NotebookLM Extension] Step 3 Func: Focused on submit button.');
-            } else {
-                console.warn('[NotebookLM Extension] Step 3 Func: Submit button not found for focusing.');
-                inputElement.blur();
-            }
+            if (submitButton) { submitButton.focus(); }
+            else { inputElement.blur(); }
             return "URL input processed.";
-        } catch (e) {
-            console.error('[NotebookLM Extension] Step 3 Func: Error setting value or dispatching events!', e);
-            return `Error processing input: ${e.message}`;
-        }
-    } else {
-        console.error(`[NotebookLM Extension] Step 3 Func: Input NOT FOUND with selector: ${inputSelector}`);
-        return "Error: URL input field not found.";
-    }
+        } catch (e) { return `Error processing input: ${e.message}`; }
+    } else { return "Error: URL input field not found."; }
 }
 
 function clickInsertButtonOnPage() {
-    const buttonSelector = "website-upload button.submit-button[type='submit']"; // 限定したセレクタを使用
-    console.log('[NotebookLM Extension] Step 4 Func: Finding button:', buttonSelector);
+    const buttonSelector = "website-upload button.submit-button[type='submit']";
     const button = document.querySelector(buttonSelector);
     if (button) {
-        console.log('[NotebookLM Extension] Step 4 Func: Found button:', button);
-        if (button.disabled) {
-             console.warn('[NotebookLM Extension] Step 4 Func: Button IS DISABLED.');
-             return 'Error: "Insert" button is disabled.';
-        }
-        try {
-             console.log('[NotebookLM Extension] Step 4 Func: Clicking enabled button.');
-             button.click();
-             return '"Insert" button clicked!';
-        } catch (e) {
-             console.error('[NotebookLM Extension] Step 4 Func: Click Error!', e);
-             return `Error clicking Insert button: ${e.message}`;
-        }
-    } else {
-        console.error(`[NotebookLM Extension] Step 4 Func: Button NOT FOUND with selector: ${buttonSelector}`);
-        return 'Error: "Insert" button not found.';
-    }
+         if (button.disabled) { return 'Error: "Insert" button is disabled.'; }
+         try { button.click(); return '"Insert" button clicked!'; }
+         catch (e) { return `Error clicking Insert button: ${e.message}`; }
+    } else { return 'Error: "Insert" button not found.'; }
 }
 
-// --- Sequence Function (変更なし) ---
+// --- Sequence Function ---
 async function processSingleUrlSequence(tabId, url) {
-    console.log(`[NotebookLM Extension] Sequence: Starting for URL: ${url}`);
     let stepResult = '';
     const delayAfterStep1 = 1000;
     const delayAfterStep2 = 500;
-    const delayAfterStep3 = 1500; // 挿入ボタン有効化待ち
+    const delayAfterStep3 = 1500;
+    const delayAfterStep4 = 2000; // Wait after insert
 
     try {
         // Step 1
-        console.log('[NotebookLM Extension] Sequence: Executing Step 1 script.');
         const results1 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: clickAddSourceButtonOnPage });
         stepResult = results1[0]?.result;
-        console.log('[NotebookLM Extension] Sequence: Step 1 raw result:', stepResult);
-        if (!stepResult || stepResult.startsWith('Error:')) throw new Error(stepResult || 'Step 1 failed.');
-        console.log('[NotebookLM Extension] Sequence: Step 1 OK.');
+        if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 1 failed.');
         await new Promise(resolve => setTimeout(resolve, delayAfterStep1));
 
         // Step 2
-        console.log('[NotebookLM Extension] Sequence: Executing Step 2 script.');
         const results2 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: clickWebsiteChipOnPage });
         stepResult = results2[0]?.result;
-        console.log('[NotebookLM Extension] Sequence: Step 2 raw result:', stepResult);
-        if (!stepResult || stepResult.startsWith('Error:')) throw new Error(stepResult || 'Step 2 failed.');
-        console.log('[NotebookLM Extension] Sequence: Step 2 OK.');
+         if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 2 failed.');
         await new Promise(resolve => setTimeout(resolve, delayAfterStep2));
 
         // Step 3
-        console.log('[NotebookLM Extension] Sequence: Executing Step 3 script.');
         const results3 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: fillUrlInputOnPage, args: [url] });
         stepResult = results3[0]?.result;
-        console.log('[NotebookLM Extension] Sequence: Step 3 raw result:', stepResult);
-        if (!stepResult || stepResult.startsWith('Error:')) throw new Error(stepResult || 'Step 3 failed.');
-        console.log('[NotebookLM Extension] Sequence: Step 3 OK.');
+        if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 3 failed.');
         await new Promise(resolve => setTimeout(resolve, delayAfterStep3));
 
         // Step 4
-        console.log('[NotebookLM Extension] Sequence: Executing Step 4 script.');
         const results4 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: clickInsertButtonOnPage });
         stepResult = results4[0]?.result;
-        console.log('[NotebookLM Extension] Sequence: Step 4 raw result:', stepResult);
-        if (!stepResult || stepResult.startsWith('Error:')) throw new Error(stepResult || 'Step 4 failed.');
-        console.log('[NotebookLM Extension] Sequence: Step 4 OK.');
+        if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 4 failed.');
+        await new Promise(resolve => setTimeout(resolve, delayAfterStep4));
 
         return true; // Success
 
     } catch (error) {
-        console.error(`[NotebookLM Extension] Sequence FAILED for URL: ${url}`, error);
-        return error.message || 'Unknown error in sequence.'; // Return error message
+        // Return the specific error message from the failed step if available
+        return `Sequence Error: ${stepResult || error.message || 'Unknown error'}`;
     }
 }
 
-// --- Message Listener (PROCESS_URL_LIST を処理) ---
+// --- Message Listener ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    // ★ PROCESS_URL_LIST メッセージを処理するようにする
-    if (message.type === 'PROCESS_URL_LIST' && message.urls) {
-        const urlsToProcess = message.urls;
-        console.log(`[NotebookLM Extension] Listener: Received PROCESS_URL_LIST with ${urlsToProcess.length} URLs.`);
 
+    if (message.type === 'PROCESS_URL_LIST' && message.urls) {
         (async () => {
-            const tabId = sender.tab ? sender.tab.id : (await chrome.tabs.query({ active: true, currentWindow: true }))[0]?.id;
+            let tabId = sender.tab?.id;
             if (!tabId) {
-                 console.error("[NotebookLM Extension] No active tab found.");
-                 chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: "Error: No active tab found." });
+                 try {
+                    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+                    tabId = tabs[0]?.id;
+                 } catch (e) { /* handle error */ }
+            }
+
+            if (!tabId) {
+                 try {
+                     chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: "Error: No active NotebookLM tab found." });
+                 } catch(e) {/* Popup likely closed */}
                  return;
             }
 
-            console.log(`[NotebookLM Extension] Listener: Starting loop for ${urlsToProcess.length} URLs on tab ${tabId}.`);
+            const urlsToProcess = message.urls;
             let successCount = 0;
             let failCount = 0;
-            const totalUrls = urlsToProcess.length; // totalUrls を定義
-            const delayBetweenUrls = 2000; // ★ 各URL処理間の待機時間
+            const totalUrls = urlsToProcess.length;
+            const delayBetweenUrls = 2500; // Increased delay slightly
 
             for (let i = 0; i < totalUrls; i++) {
                 const currentUrl = urlsToProcess[i];
-                console.log(`[NotebookLM Extension] Listener: --- Processing URL ${i + 1}/${totalUrls}: ${currentUrl} ---`);
-                // ポップアップに進捗を送信
-                chrome.runtime.sendMessage({ type: 'UPDATE_STATUS', text: `Processing ${i + 1}/${totalUrls}: ${currentUrl.substring(0, 30)}...` });
+                try {
+                    chrome.runtime.sendMessage({
+                        type: 'UPDATE_STATUS',
+                        text: `Processing ${i + 1}/${totalUrls}: ${currentUrl.substring(0, 40)}...`,
+                        isError: false
+                    });
+                } catch(e) {/* Popup likely closed */}
 
-                // 1つのURLシーケンスを実行し、結果を取得 (true or エラーメッセージ)
                 const result = await processSingleUrlSequence(tabId, currentUrl);
 
                 if (result === true) {
                     successCount++;
-                    console.log(`[NotebookLM Extension] Listener: Successfully processed URL ${i + 1}: ${currentUrl}`);
                 } else {
                     failCount++;
-                    // 具体的なエラー理由をログに出力
-                    console.error(`[NotebookLM Extension] Listener: Failed URL ${i + 1}: ${currentUrl}. Reason: ${result}`);
-                    // ポップアップにもエラー情報を一部表示
-                    chrome.runtime.sendMessage({ type: 'UPDATE_STATUS', text: `Failed ${i + 1}/${totalUrls}. Error: ${result.substring(0, 50)}...` });
-                    // エラー時にループを中断したい場合はここで break;
+                     try {
+                         chrome.runtime.sendMessage({
+                             type: 'UPDATE_STATUS',
+                             text: `Failed ${i + 1}/${totalUrls}. Err: ${String(result).substring(0, 60)}...`,
+                             isError: true
+                            });
+                     } catch(e) {/* Popup likely closed */}
+                     // Optional: Add a longer delay after an error?
+                     // await new Promise(resolve => setTimeout(resolve, 1000));
                 }
 
-                // 最後以外のURL処理後には待機する
                 if (i < totalUrls - 1) {
-                     console.log(`[NotebookLM Extension] Listener: Waiting ${delayBetweenUrls}ms before next URL...`);
                      await new Promise(resolve => setTimeout(resolve, delayBetweenUrls));
                 }
-            } // End of loop
+            }
 
-            // 全URL処理完了
             const finalText = `Finished. Success: ${successCount}, Failed: ${failCount}`;
-            console.log(`[NotebookLM Extension] Listener: ${finalText}`);
-            chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: finalText });
+             try {
+                 chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: finalText });
+             } catch(e) {/* Popup likely closed */}
 
-        })(); // async IIFE end
-
+        })();
         return true; // Indicate async response
+
+    } else if (message.type === 'FILE_SELECTED_PING') {
+        // Acknowledge ping, no critical action needed. Helps keep popup alive.
+        sendResponse({ status: "Ping received by background" });
+        // No 'return true' here as sendResponse is called synchronously within this handler turn.
     }
-    // 古い 'CLICK_ADD_SOURCE' リスナーは不要なら削除
+
+    // If other synchronous message types were handled, return false or nothing.
+    // If only async types handled, could return true unconditionally, but being specific is better.
+    // For clarity, return true only if PROCESS_URL_LIST matched.
+    return (message.type === 'PROCESS_URL_LIST');
 });
+
+// --- Optional: Initial setup or other listeners ---
+// Example: Action button click listener (if using browserAction instead of pageAction)
+// chrome.action.onClicked.addListener((tab) => {
+//   // Logic to open popup or perform default action
+// });
