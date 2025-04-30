@@ -40,7 +40,11 @@ function showStatus(message, type = '') {
     const statusDiv = document.getElementById('status');
     if (!statusDiv) return;
     statusDiv.textContent = message;
-    statusDiv.className = type;
+    // ★ HTML構造に合わせてクラス名を調整 (CSS変数を使う場合)
+    statusDiv.className = ''; // Reset classes
+    if (type) {
+      statusDiv.classList.add(type); // Add 'error' or 'success' class
+    }
     statusDiv.style.display = 'block';
 
     if (statusTimeout) {
@@ -69,6 +73,9 @@ function disableUI(showStop = true) {
     if (startTextHtmlButton) startTextHtmlButton.disabled = true;
     if (columnNameInput) columnNameInput.disabled = true;
     if (urlListTextArea) urlListTextArea.disabled = true;
+    // Disable options button as well during processing
+    const optionsBtn = document.getElementById('optionsButton');
+    if(optionsBtn) optionsBtn.disabled = true;
     if (stopButton) {
         stopButton.style.display = showStop ? 'block' : 'none';
         stopButton.disabled = false;
@@ -79,6 +86,9 @@ function enableUI() {
     if (startTextHtmlButton) startTextHtmlButton.disabled = false;
     if (columnNameInput) columnNameInput.disabled = false;
     if (urlListTextArea) urlListTextArea.disabled = false;
+    // Enable options button
+    const optionsBtn = document.getElementById('optionsButton');
+    if(optionsBtn) optionsBtn.disabled = false;
     if (stopButton) {
         stopButton.style.display = 'none';
         stopButton.disabled = true;
@@ -201,7 +211,7 @@ if (startTextHtmlButton) {
         if (!inputText) { showStatus('Paste URLs or HTML.', 'error'); return; }
 
         showStatus('Processing pasted text/HTML...', '');
-        disableUI();
+        disableUI(); // Disable UI including options button
 
         let urls = [];
         try {
@@ -283,7 +293,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     if (statusDiv) { statusDiv.textContent = ''; statusDiv.className = ''; statusDiv.style.display = 'none'; }
-    if (urlListTextArea) { urlListTextArea.value = ''; urlListTextArea.focus(); }
+    // Don't focus textarea by default if it's hidden in <details>
+    // if (urlListTextArea) { urlListTextArea.value = ''; urlListTextArea.focus(); }
+     if (urlListTextArea) { urlListTextArea.value = ''; }
+
 
     chrome.storage.local.get(['columnName'], (result) => {
          if (!chrome.runtime.lastError && result.columnName) {
@@ -292,8 +305,36 @@ document.addEventListener('DOMContentLoaded', () => {
              columnNameInput.value = 'URL';
          }
     });
-    enableUI();
+
+    // ★ Dynamically create and insert the Options button ★
+    const optionsButton = document.createElement('button');
+    optionsButton.textContent = '設定 (CSVデータの管理)';
+    optionsButton.id = 'optionsButton';
+    // ★ Apply CSS classes from the new design ★
+    optionsButton.classList.add('btn', 'btn-options');
+    optionsButton.addEventListener('click', () => {
+        chrome.runtime.openOptionsPage();
+    });
+
+    // ★ Insert the button after the stopButton within the first section ★
+    const stopBtn = document.getElementById('stopButton');
+    if (stopBtn && stopBtn.parentNode) {
+        // insertAfter equivalent: insert before the element that is *after* the stop button,
+        // or append if stop button is the last element in its parent.
+        stopBtn.parentNode.insertBefore(optionsButton, stopBtn.nextSibling);
+    } else {
+        // Fallback: append to the first section if stopButton not found
+        const firstSection = document.querySelector('.section');
+        if (firstSection) {
+            firstSection.appendChild(optionsButton);
+        } else {
+            document.body.appendChild(optionsButton); // Absolute fallback
+        }
+    }
+
+    enableUI(); // Ensure UI is enabled after setup
 });
+
 
 if (columnNameInput) {
     columnNameInput.addEventListener('change', () => {
@@ -302,14 +343,4 @@ if (columnNameInput) {
     });
 }
 
-const openOptionsButton = document.createElement('button');
-openOptionsButton.textContent = '設定 (Load/Manage CSV)';
-openOptionsButton.style.marginTop = '10px';
-openOptionsButton.id = 'optionsButton';
-openOptionsButton.addEventListener('click', () => { chrome.runtime.openOptionsPage(); });
-const textHtmlBtn = document.getElementById('startTextHtmlButton');
-if(textHtmlBtn && textHtmlBtn.parentNode) {
-    textHtmlBtn.parentNode.insertBefore(openOptionsButton, textHtmlBtn.nextSibling);
-} else {
-    document.body.appendChild(openOptionsButton);
-}
+// The code to create and append button is now inside DOMContentLoaded

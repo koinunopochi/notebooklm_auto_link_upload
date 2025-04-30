@@ -4,57 +4,105 @@
   <title>NotebookLM URL Uploader</title>
   <meta charset="UTF-8">
   <style>
-    body { width: 350px; font-family: sans-serif; padding: 10px; }
-    label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em;}
-    input[type="text"], textarea { /* input[type="file"] removed */
-        width: 95%; padding: 6px; margin-top: 2px; margin-bottom: 10px;
-        border: 1px solid #ccc; box-sizing: border-box;
+    /* === 前回答で提示したモダンなCSSスタイルをここに記述 === */
+    :root {
+      --primary-color: #4a90e2; /* Example blue */
+      --primary-hover-color: #357abd;
+      --secondary-color: #f5f5f5;
+      --secondary-hover-color: #e0e0e0;
+      --text-color: #333;
+      --label-color: #555;
+      --border-color: #ddd;
+      --error-bg: #f8d7da;
+      --error-text: #721c24;
+      --error-border: #f5c6cb;
+      --success-bg: #d4edda;
+      --success-text: #155724;
+      --success-border: #c3e6cb;
+      --white: #fff;
+      --body-bg: #f9f9f9;
+      --shadow-color: rgba(0, 0, 0, 0.1);
+      --border-radius: 6px;
     }
-    textarea { height: 100px; }
-    button { width: 100%; padding: 10px; margin-bottom: 10px; cursor: pointer;}
-    button:disabled { cursor: not-allowed; opacity: 0.6; }
-    #stopButton { background-color: #dc3545; color: white; }
-    #stopButton:disabled { background-color: #dc3545; opacity: 0.8; } /* Slightly different disabled style */
-    hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
-     #status {
-        padding: 8px;
-        margin-top: 10px;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        display: none; /* Initially hidden */
-        word-wrap: break-word; /* Prevent long messages from breaking layout */
-     }
-     #status.error {
-         border-color: #f5c6cb;
-         background-color: #f8d7da;
-         color: #721c24;
-     }
-     #status.success {
-        border-color: #c3e6cb;
-        background-color: #d4edda;
-        color: #155724;
-     }
-     /* file-info class removed as the element is removed */
+    body {
+      width: 380px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      padding: 0;
+      margin: 0;
+      background-color: var(--body-bg);
+      color: var(--text-color);
+      font-size: 14px;
+    }
+    .container { padding: 20px; }
+    h4 { font-size: 1.2em; margin: 0 0 15px 0; color: var(--text-color); text-align: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+    .section { background-color: var(--white); padding: 20px; border-radius: var(--border-radius); margin-bottom: 20px; box-shadow: 0 1px 3px var(--shadow-color); border: 1px solid #eee; }
+    .section-title { font-size: 1.1em; font-weight: 600; margin-bottom: 15px; color: var(--label-color); }
+    label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: var(--label-color); font-size: 0.95em; }
+    input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--border-radius); box-sizing: border-box; font-size: 1em; margin-top: 0; transition: border-color 0.2s, box-shadow 0.2s; }
+    input[type="text"]:focus, textarea:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2); }
+    textarea { height: 80px; resize: vertical; }
+    .btn { display: block; width: 100%; padding: 10px 15px; margin-bottom: 10px; border: none; border-radius: var(--border-radius); cursor: pointer; font-size: 1em; font-weight: 600; text-align: center; transition: background-color 0.2s, box-shadow 0.2s, border-color 0.2s, color 0.2s; box-sizing: border-box; }
+    .btn:disabled { cursor: not-allowed; opacity: 0.6; }
+    .btn-primary { background-color: var(--primary-color); color: var(--white); box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2); }
+    .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover-color); box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3); }
+    .btn-secondary { background-color: var(--white); color: var(--primary-color); border: 1px solid var(--primary-color); }
+    .btn-secondary:hover:not(:disabled) { background-color: rgba(74, 144, 226, 0.05); border-color: var(--primary-hover-color); color: var(--primary-hover-color); }
+    #stopButton { background-color: #e74c3c; color: var(--white); border: none; }
+    #stopButton:hover:not(:disabled) { background-color: #c0392b; }
+    #stopButton:disabled { background-color: #e74c3c; opacity: 0.7; }
+    .btn-options { background-color: var(--secondary-color); color: var(--label-color); border: 1px solid var(--border-color); font-weight: 500; margin-top: 0; /* Adjusted margin-top for dynamic insertion */ }
+    .btn-options:hover:not(:disabled) { background-color: var(--secondary-hover-color); border-color: #ccc; }
+    #status { padding: 12px; margin-top: 15px; border: 1px solid transparent; border-radius: var(--border-radius); display: none; word-wrap: break-word; font-size: 0.95em; }
+    #status.error { border-color: var(--error-border); background-color: var(--error-bg); color: var(--error-text); }
+    #status.success { border-color: var(--success-border); background-color: var(--success-bg); color: var(--success-text); }
+    details { border: 1px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--white); box-shadow: 0 1px 2px var(--shadow-color); overflow: hidden; }
+    summary { padding: 12px 15px; font-weight: 600; color: var(--label-color); cursor: pointer; list-style: none; position: relative; background-color: #fdfdfd; border-bottom: 1px solid var(--border-color); }
+    summary::before { content: '▶'; position: absolute; left: 15px; font-size: 0.8em; color: #999; transition: transform 0.2s; }
+    details[open] > summary::before { transform: rotate(90deg); }
+    details > summary { padding-left: 35px; }
+    .details-content { padding: 15px; border-top: 1px solid var(--border-color); }
+    .recommendation-text { font-size: 0.9em; color: #777; margin-bottom: 15px; }
+    .secondary-text { font-size: 0.9em; color: #777; margin-top: 5px; }
+    /* --- End of CSS --- */
   </style>
 </head>
 <body>
-  <h4>Upload URLs to NotebookLM</h4>
+  <div class="container">
+    <h4>NotebookLM URL Uploader</h4>
 
-  <hr>
-  <label for="columnNameInput">Column Name for URLs (from saved data):</label>
-  <input type="text" id="columnNameInput" value="URL">
+    <!-- Section 1: Saved Data (Recommended) -->
+    <div class="section">
+      <div class="section-title">Saved CSV Data (推奨)</div>
+      <p class="recommendation-text">
+        設定ページでロードしたCSVデータからURLをアップロードします。処理状況は自動で保存されます。
+      </p>
+      <label for="columnNameInput">URLが含まれる列名:</label>
+      <input type="text" id="columnNameInput" value="URL">
 
-  <button id="startButton">Start Upload from Saved Data</button>
-  <button id="stopButton" style="display: none;">Stop Processing</button>
-  <hr>
+      <button id="startButton" class="btn btn-primary">Start Upload from Saved Data</button>
+      <button id="stopButton" class="btn" style="display: none;">Stop Processing</button>
+      <!-- Options button will be inserted here by popup.js -->
+    </div>
 
-  <label for="urlList">Or Paste URLs/HTML:</label>
-  <textarea id="urlList" placeholder="Paste URLs (separated by newline, comma, etc.) or HTML content here..."></textarea>
-  <button id="startTextHtmlButton">Start Upload from Text/HTML</button>
+    <!-- Section 2: Paste URLs/HTML (Optional, via <details>) -->
+    <details class="section">
+        <summary>または URL/HTMLを直接入力 (少数向け)</summary>
+        <div class="details-content">
+          <label for="urlList">URLs / HTML Content:</label>
+          <textarea id="urlList" placeholder="改行やカンマ区切りのURLリスト、またはリンクを含むHTMLを貼り付け..."></textarea>
+          <p class="secondary-text">
+            こちらからのアップロードでは、処理状況は保存されません。
+          </p>
+          <button id="startTextHtmlButton" class="btn btn-secondary">Start Upload from Text/HTML</button>
+        </div>
+    </details>
 
-  <div id="status"></div>
+    <div id="status"></div>
+
+  </div> <!-- /.container -->
 
   <script src="papaparse.min.js"></script>
   <script src="popup.js"></script>
+  <!-- Inline script for details toggle error handling removed as button creation is in popup.js -->
 </body>
 </html>
