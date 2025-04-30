@@ -13,6 +13,44 @@ document.addEventListener('DOMContentLoaded', function() {
   // 処理結果列の設定変更時の処理
   resultColumnNameInput.addEventListener('change', updatePreview);
 
+  // local storageからCSVデータを読み込む
+  chrome.storage.local.get(['csvData'], function(result) {
+    if (result.csvData) {
+      fileInfoDiv.textContent = '保存されたCSVデータを読み込みました';
+      
+      // PapaParseを使用してCSVを解析
+      Papa.parse(result.csvData, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          if (results.errors.length > 0) {
+            showStatus('CSVデータの解析中にエラーが発生しました', 'error');
+            return;
+          }
+
+          // データを保存してプレビューを更新
+          window.csvData = results;
+          updatePreview();
+          
+          // ヘッダー行を取得してカラム名の候補を表示
+          if (results.meta.fields && results.meta.fields.length > 0) {
+            const columnNameInput = document.getElementById('columnName');
+            if (!columnNameInput.value || columnNameInput.value === 'URL') {
+              // URLを含むカラム名を探す
+              const urlColumn = results.meta.fields.find(h => h.toLowerCase().includes('url'));
+              if (urlColumn) {
+                columnNameInput.value = urlColumn;
+              }
+            }
+          }
+        },
+        error: function(error) {
+          showStatus(`CSVデータの解析中にエラーが発生しました: ${error.message}`, 'error');
+        }
+      });
+    }
+  });
+
   if (csvFileInput) {
     csvFileInput.addEventListener('change', function(event) {
       const file = event.target.files[0];
