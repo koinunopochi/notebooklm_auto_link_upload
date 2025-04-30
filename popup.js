@@ -1,73 +1,279 @@
-// 要素を取得
-const startButton = document.getElementById('startButton');
+const csvFileInput = document.getElementById('csvFileInput');
+const fileInfoDiv = document.getElementById('fileInfo');
+const columnNameInput = document.getElementById('columnNameInput');
+const startCsvButton = document.getElementById('startButton');
 const urlListTextArea = document.getElementById('urlList');
+const startTextHtmlButton = document.getElementById('startTextHtmlButton');
 const statusDiv = document.getElementById('status');
+const stopButton = document.getElementById('stopButton'); // Assuming you might add stop functionality later
 
-// 開始ボタンのクリックリスナー
-startButton.addEventListener('click', () => {
-  // テキストエリアの値を取得し、区切り文字で分割、整形
-  const urls = urlListTextArea.value
-    .split(/[\s,;\t\n]+/) // 改行,空白,カンマ,セミコロン,タブで分割
-    .map(url => url.trim())   // 前後の空白を削除
-    .filter(url => url !== '' && url.length > 0); // 空の要素を除去
+function disableUI() {
+    startCsvButton.disabled = true;
+    startTextHtmlButton.disabled = true;
+    if (csvFileInput) csvFileInput.disabled = true;
+    if (columnNameInput) columnNameInput.disabled = true;
+    if (urlListTextArea) urlListTextArea.disabled = true;
+    // if (stopButton) stopButton.style.display = 'block'; // Show stop button if needed
+}
+function enableUI() {
+    startCsvButton.disabled = false;
+    startTextHtmlButton.disabled = false;
+    if (csvFileInput) csvFileInput.disabled = false;
+    if (columnNameInput) columnNameInput.disabled = false;
+    if (urlListTextArea) urlListTextArea.disabled = false;
+    // if (stopButton) stopButton.style.display = 'none'; // Hide stop button
+}
 
-  // URLが見つからない場合は処理中断
-  if (urls.length === 0) {
-    statusDiv.textContent = 'No valid URLs entered. Please enter URLs.';
-    statusDiv.className = 'error'; // エラースタイル適用
-    urlListTextArea.focus(); // テキストエリアにフォーカス
-    return;
-  }
+if (csvFileInput) {
+    csvFileInput.addEventListener('change', (event) => {
+        try {
+            if (!fileInfoDiv || !statusDiv) {
+                alert("Popup Error: Missing required HTML elements (fileInfoDiv or statusDiv).");
+                return;
+            }
 
-  // 処理開始の表示とUIの無効化
-  statusDiv.textContent = `Found ${urls.length} URLs. Starting upload...`;
-  statusDiv.className = ''; // 通常スタイルに戻す
-  startButton.disabled = true;
-  urlListTextArea.disabled = true;
+            if (event.target && event.target.files && event.target.files.length > 0) {
+                const file = event.target.files[0];
+                fileInfoDiv.textContent = `Selected: ${file.name}`;
+                statusDiv.textContent = '';
+                statusDiv.className = '';
 
-  // バックグラウンドスクリプトにURLリストと処理開始メッセージを送信
-  chrome.runtime.sendMessage(
-    { type: 'PROCESS_URL_LIST', urls: urls }, // 新しいメッセージタイプ
-    (response) => {
-      // sendMessage 自体の即時エラーハンドリング (接続失敗など)
-      if (chrome.runtime.lastError) {
-        statusDiv.textContent = `Error sending message: ${chrome.runtime.lastError.message}`;
-        statusDiv.className = 'error';
-        console.error("Send message error:", chrome.runtime.lastError.message);
-        // UIを有効に戻す
-        startButton.disabled = false;
-        urlListTextArea.disabled = false;
-      }
-      // background.js から非同期で応答が来るので、ここでは通常何もしない
-      // console.log("Message sent to background.");
-    }
-  );
-});
+                chrome.runtime.sendMessage({ type: 'FILE_SELECTED_PING', fileName: file.name }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        // Optional: Handle ping error silently or display a non-critical warning
+                    }
+                });
 
-// バックグラウンドスクリプトからのメッセージ(進捗・完了)を受け取るリスナー
+            } else {
+                fileInfoDiv.textContent = 'No file selected.';
+            }
+        } catch (error) {
+            if (statusDiv) {
+                statusDiv.textContent = `Error on file select: ${error.message}`;
+                statusDiv.className = 'error';
+            } else {
+                alert(`Error on file select: ${error.message}`);
+            }
+        }
+    });
+} else {
+     // Maybe alert user or log to background if critical element missing on load
+     console.error("[Popup] CRITICAL ERROR: csvFileInput element not found in popup.html!");
+}
+
+
+if (startCsvButton) {
+    startCsvButton.addEventListener('click', () => {
+        if (!csvFileInput || !columnNameInput || !statusDiv || !fileInfoDiv) {
+             alert("Popup Error: Required elements missing for CSV processing.");
+             return;
+        }
+
+        if (csvFileInput.files.length === 0) {
+            statusDiv.textContent = 'Please select a CSV file first.';
+            statusDiv.className = 'error';
+            return;
+        }
+
+        const file = csvFileInput.files[0];
+        const columnName = columnNameInput.value.trim() || 'URL';
+
+        statusDiv.textContent = `Reading CSV file... Column: "${columnName}"`;
+        statusDiv.className = '';
+        disableUI();
+
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            const csvData = event.target.result;
+
+            if (typeof Papa === 'undefined') {
+                statusDiv.textContent = 'Error: CSV Parsing library not loaded.';
+                statusDiv.className = 'error';
+                enableUI();
+                return;
+            }
+
+            Papa.parse(csvData, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    if (results.errors.length > 0) {
+                        statusDiv.textContent = `Error parsing CSV: ${results.errors[0].message}`;
+                        statusDiv.className = 'error';
+                        enableUI();
+                        return;
+                    }
+
+                     if (!results.meta || !results.meta.fields) {
+                         statusDiv.textContent = 'Error parsing CSV: Header row not detected.';
+                         statusDiv.className = 'error';
+                         enableUI();
+                         return;
+                     }
+
+                    if (!results.meta.fields.includes(columnName)) {
+                        const availableColumns = results.meta.fields.join(', ');
+                        statusDiv.textContent = `Error: Column "${columnName}" not found. Available: ${availableColumns}`;
+                        statusDiv.className = 'error';
+                        enableUI();
+                        return;
+                    }
+
+                    let urls = results.data
+                        .map(row => row[columnName])
+                        .filter(url => url && typeof url === 'string' && url.trim() !== '' && !url.startsWith('#'))
+                        .map(url => url.trim());
+                    urls = [...new Set(urls)];
+
+                    if (urls.length === 0) {
+                         statusDiv.textContent = `No valid URLs found in column "${columnName}".`;
+                         statusDiv.className = 'error';
+                         enableUI();
+                         return;
+                    }
+
+                    statusDiv.textContent = `Found ${urls.length} URLs from CSV. Sending...`;
+                    chrome.runtime.sendMessage(
+                        { type: 'PROCESS_URL_LIST', urls: urls },
+                        (response) => {
+                            if (chrome.runtime.lastError) {
+                                 statusDiv.textContent = `Error sending data: ${chrome.runtime.lastError.message}`;
+                                 statusDiv.className = 'error';
+                                 enableUI();
+                            }
+                        }
+                     );
+                },
+                error: function(error, file) {
+                     statusDiv.textContent = `CSV parsing failed: ${error.message}`;
+                     statusDiv.className = 'error';
+                     enableUI();
+                }
+            });
+        };
+
+        reader.onerror = function(event) {
+             statusDiv.textContent = 'Error reading the selected file.';
+             statusDiv.className = 'error';
+             enableUI();
+        };
+
+        try {
+            reader.readAsText(file);
+        } catch (readError) {
+             statusDiv.textContent = `Error initiating file read: ${readError.message}`;
+             statusDiv.className = 'error';
+             enableUI();
+        }
+    });
+}
+
+
+if (startTextHtmlButton) {
+    startTextHtmlButton.addEventListener('click', () => {
+        if (!urlListTextArea || !statusDiv) {
+             alert("Popup Error: Required elements missing for Text/HTML processing.");
+             return;
+        }
+        const inputText = urlListTextArea.value.trim();
+        if (!inputText) {
+             statusDiv.textContent = 'Please paste URLs or HTML first.';
+             statusDiv.className = 'error';
+             return;
+        }
+
+        statusDiv.textContent = 'Processing pasted text/HTML...';
+        statusDiv.className = '';
+        disableUI();
+
+        let urls = [];
+        try {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = inputText;
+            const anchors = tempDiv.querySelectorAll('a');
+            if (anchors.length > 0 && inputText.toLowerCase().includes('<a')) {
+                 anchors.forEach(anchor => {
+                     const href = anchor.getAttribute('href');
+                     if (href && href.trim() !== '' && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                         try {
+                             urls.push(new URL(href.trim(), window.location.href).href);
+                         } catch (e) {
+                             // Ignore invalid URLs
+                         }
+                     }
+                 });
+                 urls = [...new Set(urls)];
+            }
+        } catch (e) { /* Ignore potential HTML parsing errors */ }
+
+        if (urls.length === 0) {
+            urls = inputText
+                .split(/[\s,;\t\n]+/)
+                .map(url => url.trim())
+                .filter(url => url && url.length > 3 && url.includes('.') && !url.startsWith('#')); // Basic URL check
+            urls = urls.map(url => { // Add protocol if missing
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    return 'https://' + url;
+                }
+                return url;
+            });
+             urls = [...new Set(urls)]; // Remove duplicates again
+             urls = urls.filter(url => { // Final validation attempt
+                  try {
+                       new URL(url);
+                       return true;
+                  } catch (e) { return false; }
+             });
+        }
+
+        if (urls.length === 0) {
+             statusDiv.textContent = `No valid URLs found in the pasted content.`;
+             statusDiv.className = 'error';
+             enableUI();
+             return;
+        }
+
+        statusDiv.textContent = `Found ${urls.length} URLs from text/HTML. Sending...`;
+         chrome.runtime.sendMessage(
+             { type: 'PROCESS_URL_LIST', urls: urls },
+             (response) => {
+                  if (chrome.runtime.lastError) {
+                       statusDiv.textContent = `Error sending data: ${chrome.runtime.lastError.message}`;
+                       statusDiv.className = 'error';
+                       enableUI();
+                  }
+             }
+         );
+    });
+}
+
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("Message received from background:", message); // デバッグ用ログ
-
   if (message.type === 'UPDATE_STATUS') {
-    // 進捗メッセージをステータス表示
-    statusDiv.textContent = message.text;
-    statusDiv.className = ''; // 通常スタイル
+    if (statusDiv) statusDiv.textContent = message.text;
+    if (statusDiv) statusDiv.className = message.isError ? 'error' : '';
   } else if (message.type === 'PROCESS_COMPLETE') {
-    // 完了メッセージをステータス表示
-    statusDiv.textContent = message.text;
-    // 失敗が含まれているかなどでスタイルを変える（任意）
-    if (message.text && message.text.toLowerCase().includes('failed')) {
-         statusDiv.className = 'error';
-    } else {
-         statusDiv.className = 'success';
+    if (statusDiv) statusDiv.textContent = message.text;
+    if (statusDiv) {
+        if (message.text && (message.text.toLowerCase().includes('failed') || message.text.toLowerCase().includes('error'))) {
+             statusDiv.className = 'error';
+        } else {
+             statusDiv.className = 'success';
+        }
     }
-    // 完了したらUIを再度有効化
-    startButton.disabled = false;
-    urlListTextArea.disabled = false;
+    enableUI();
   }
 });
 
-// ポップアップを開いたときにテキストエリアにフォーカス（任意）
+
 document.addEventListener('DOMContentLoaded', () => {
-    urlListTextArea.focus();
+    if (csvFileInput) csvFileInput.value = '';
+    if (fileInfoDiv) fileInfoDiv.textContent = 'No file selected.';
+    if (statusDiv) {
+        statusDiv.textContent = '';
+        statusDiv.className = '';
+    }
+    if (urlListTextArea) urlListTextArea.focus();
+    enableUI(); // Ensure UI is enabled on load
 });
