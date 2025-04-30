@@ -1,17 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>NotebookLM Action</title>
+  <title>NotebookLM URL Uploader</title>
+  <meta charset="UTF-8">
   <style>
-    body { width: 200px; font-family: sans-serif; padding: 10px; text-align: center;}
-    button { width: 90%; padding: 10px; margin-top: 5px;}
-    #status { margin-top: 10px; font-size: 0.9em; min-height: 1.2em;}
+    body { width: 300px; font-family: sans-serif; padding: 10px; }
+    textarea { width: 95%; height: 150px; margin-bottom: 10px; border: 1px solid #ccc; }
+    button { width: 100%; padding: 8px; margin-bottom: 10px;}
+    #status {
+        margin-top: 5px;
+        font-size: 0.9em;
+        min-height: 1.2em;
+        padding: 5px;
+        border: 1px solid transparent; /*
+        border-radius: 3px; */
+        word-wrap: break-word;
+     }
+     #status.error {
+         border-color: #f5c6cb;
+         background-color: #f8d7da;
+         color: #721c24;
+     }
+     #status.success {
+        border-color: #c3e6cb;
+        background-color: #d4edda;
+        color: #155724;
+     }
   </style>
 </head>
 <body>
-  <h4>NotebookLM Action</h4>
-  <button id="addSourceButton">Click 'Add Source'</button>
+  <h4>Upload URLs to NotebookLM</h4>
+  <p>Enter URLs (one per line, or separated by comma, semicolon, tab):</p>
+  <textarea id="urlList" placeholder="https://example.com/page1&#10;https://example.com/page2, https://example.com/page3"></textarea>
+  <button id="startButton">Start Upload Process</button>
   <div id="status"></div>
+
   <script src="popup.js"></script>
 </body>
 </html>
