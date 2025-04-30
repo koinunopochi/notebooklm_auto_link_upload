@@ -6,7 +6,7 @@
   <style>
     body { width: 350px; font-family: sans-serif; padding: 10px; }
     label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em;}
-    input[type="text"], input[type="file"], textarea {
+    input[type="text"], textarea { /* input[type="file"] removed */
         width: 95%; padding: 6px; margin-top: 2px; margin-bottom: 10px;
         border: 1px solid #ccc; box-sizing: border-box;
     }
@@ -14,13 +14,15 @@
     button { width: 100%; padding: 10px; margin-bottom: 10px; cursor: pointer;}
     button:disabled { cursor: not-allowed; opacity: 0.6; }
     #stopButton { background-color: #dc3545; color: white; }
-    #stopButton:disabled { background-color: #dc3545; }
+    #stopButton:disabled { background-color: #dc3545; opacity: 0.8; } /* Slightly different disabled style */
     hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
      #status {
         padding: 8px;
         margin-top: 10px;
         border: 1px solid transparent;
         border-radius: 4px;
+        display: none; /* Initially hidden */
+        word-wrap: break-word; /* Prevent long messages from breaking layout */
      }
      #status.error {
          border-color: #f5c6cb;
@@ -32,26 +34,17 @@
         background-color: #d4edda;
         color: #155724;
      }
-     .file-info {
-         font-size: 0.85em;
-         color: #666;
-         margin-top: -5px;
-         margin-bottom: 10px;
-     }
+     /* file-info class removed as the element is removed */
   </style>
 </head>
 <body>
   <h4>Upload URLs to NotebookLM</h4>
 
   <hr>
-  <label for="csvFileInput">1. Select CSV File:</label>
-  <input type="file" id="csvFileInput" accept=".csv">
-  <div id="fileInfo" class="file-info">No file selected.</div>
-
-  <label for="columnNameInput">2. Column Name for URLs:</label>
+  <label for="columnNameInput">Column Name for URLs (from saved data):</label>
   <input type="text" id="columnNameInput" value="URL">
 
-  <button id="startButton">Start Upload from CSV</button>
+  <button id="startButton">Start Upload from Saved Data</button>
   <button id="stopButton" style="display: none;">Stop Processing</button>
   <hr>
 
