@@ -141,6 +141,55 @@
     .csv-table td {
       color: #333;
     }
+    .result-column {
+      width: 100px;
+      text-align: center;
+    }
+    .result-column input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .result-column .success-icon {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+    .result-column .failure-icon {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    .result-settings {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+    .result-settings label {
+      display: inline-block;
+      margin-right: 20px;
+      margin-top: 0;
+    }
+    .result-settings input[type="text"] {
+      width: 200px;
+      display: inline-block;
+      margin-right: 20px;
+    }
+    .result-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      margin-left: 10px;
+    }
+    .result-status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .result-status.failure {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
   </style>
 </head>
 <body>
@@ -151,6 +200,12 @@
       <h2>CSV設定</h2>
       <label for="columnName">URL列の名前:</label>
       <input type="text" id="columnName" value="URL" placeholder="デフォルト: URL">
+      
+      <div class="result-settings">
+        <label for="resultColumnName">処理結果列の名前:</label>
+        <input type="text" id="resultColumnName" value="is_success" placeholder="デフォルト: is_success">
+        <span class="result-status">処理結果を記録する列</span>
+      </div>
       
       <label for="csvFileInput">CSVファイルをアップロード:</label>
       <input type="file" id="csvFileInput" accept=".csv">
