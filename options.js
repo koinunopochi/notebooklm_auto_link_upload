@@ -85,6 +85,7 @@ function updatePreview() {
   // ヘッダー行を表示 (meta.fieldsを使用)
   const headers = window.csvData.meta.fields;
   let headerHtml = '<tr>';
+  headerHtml += '<th class="row-number">No</th>'; // 行番号のヘッダーを追加
   headers.forEach(header => {
     const isResultColumn = header === 'is_success';
     headerHtml += `<th class="${isResultColumn ? 'result-column' : ''}">${header}</th>`;
@@ -96,6 +97,7 @@ function updatePreview() {
   let bodyHtml = '';
   window.csvData.data.forEach((row, index) => {
     bodyHtml += '<tr>';
+    bodyHtml += `<td class="row-number">${index + 1}</td>`; // 行番号を追加
     headers.forEach(header => {
        if (header === 'is_success') {
           bodyHtml += `<td class="result-column">`;
