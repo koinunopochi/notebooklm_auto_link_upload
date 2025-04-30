@@ -1,0 +1,24 @@
+{
+    "manifest_version": 3,
+    "name": "NotebookLM Simple Uploader",
+    "version": "1.0.1",
+    "description": "Clicks the 'Add Source' button on NotebookLM.",
+    "permissions": [
+      "activeTab",
+      "scripting"
+    ],
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
+      }
+    },
+    "background": {
+      "service_worker": "background.js"
+    },
+    "icons": {
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
+    }
+  }
