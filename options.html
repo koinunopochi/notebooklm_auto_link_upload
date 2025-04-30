@@ -190,6 +190,56 @@
       background-color: #f8d7da;
       color: #721c24;
     }
+    .column-settings {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+    .column-settings label {
+      display: inline-block;
+      margin-right: 20px;
+      margin-top: 0;
+    }
+    .column-settings input[type="text"] {
+      width: 200px;
+      display: inline-block;
+      margin-right: 20px;
+    }
+    .details-section {
+      margin-top: 20px;
+      border: 1px solid #eee;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .details-header {
+      padding: 12px 15px;
+      background: #f8f9fa;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    .details-header:hover {
+      background: #f0f0f0;
+    }
+    .details-content {
+      padding: 15px;
+      background: #fff;
+      display: none;
+    }
+    .details-content.show {
+      display: block;
+    }
+    .details-icon {
+      transition: transform 0.3s;
+    }
+    .details-icon.rotated {
+      transform: rotate(180deg);
+    }
   </style>
 </head>
 <body>
@@ -198,8 +248,11 @@
     
     <div class="section">
       <h2>CSV設定</h2>
-      <label for="columnName">URL列の名前:</label>
-      <input type="text" id="columnName" value="URL" placeholder="デフォルト: URL">
+      
+      <div class="column-settings">
+        <label for="columnName">URL列の名前:</label>
+        <input type="text" id="columnName" value="URL" placeholder="デフォルト: URL">
+      </div>
       
       <div class="result-settings">
         <label for="resultColumnName">処理結果列の名前:</label>
