@@ -92,9 +92,9 @@ function updatePreview() {
   headerHtml += '</tr>';
   csvPreviewHeader.innerHTML = headerHtml;
 
-  // データ行を表示（最初の5行のみ）
+  // データ行を表示
   let bodyHtml = '';
-  window.csvData.data.slice(0, 5).forEach((row, index) => {
+  window.csvData.data.forEach((row, index) => {
     bodyHtml += '<tr>';
     headers.forEach(header => {
        if (header === 'is_success') {
