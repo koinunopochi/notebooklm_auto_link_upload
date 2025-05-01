@@ -1,9 +1,10 @@
 {
     "manifest_version": 3,
-    "name": "NotebookLM Simple Uploader",
-    "version": "1.0.1",
-    "description": "Clicks the 'Add Source' button on NotebookLM.",
+    "name": "NotebookLM URL Uploader",
+    "version": "1.0",
+    "description": "URLをNotebookLMに自動アップロードする拡張機能",
     "permissions": [
+      "storage",
       "activeTab",
       "scripting"
     ],
@@ -14,6 +15,7 @@
         "128": "images/icon128.png"
       }
     },
+    "options_page": "options.html",
     "background": {
       "service_worker": "background.js"
     },

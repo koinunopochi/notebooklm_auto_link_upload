@@ -1,4 +1,3 @@
-// --- Helper Functions (to be injected) ---
 function clickAddSourceButtonOnPage() {
     const buttonSelector = "button[aria-label='ソースを追加'], button[aria-label='Add source']";
     const button = document.querySelector(buttonSelector);
@@ -8,7 +7,6 @@ function clickAddSourceButtonOnPage() {
          catch (e) { return `Error clicking Add Source: ${e.message}`; }
     } else { return 'Error: "Add Source" button not found.'; }
 }
-
 function clickWebsiteChipOnPage() {
     const xpath = "//mat-chip[.//span[normalize-space(.)='ウェブサイト' or normalize-space(.)='Website']]";
     try {
@@ -19,7 +17,6 @@ function clickWebsiteChipOnPage() {
         } else { return 'Error: "Website" chip not found.'; }
     } catch (e) { return `Error finding Website chip: ${e.message}`; }
 }
-
 function fillUrlInputOnPage(urlToFill) {
     const inputSelector = "input[formcontrolname='newUrl']";
     const submitButtonSelector = "website-upload button.submit-button[type='submit']";
@@ -36,7 +33,6 @@ function fillUrlInputOnPage(urlToFill) {
         } catch (e) { return `Error processing input: ${e.message}`; }
     } else { return "Error: URL input field not found."; }
 }
-
 function clickInsertButtonOnPage() {
     const buttonSelector = "website-upload button.submit-button[type='submit']";
     const button = document.querySelector(buttonSelector);
@@ -47,127 +43,172 @@ function clickInsertButtonOnPage() {
     } else { return 'Error: "Insert" button not found.'; }
 }
 
-// --- Sequence Function ---
 async function processSingleUrlSequence(tabId, url) {
     let stepResult = '';
+    const delayBeforeStep1 = 300;
     const delayAfterStep1 = 1000;
     const delayAfterStep2 = 500;
     const delayAfterStep3 = 1500;
-    const delayAfterStep4 = 2000; // Wait after insert
+    const delayAfterStep4 = 2000;
 
     try {
-        // Step 1
+        await new Promise(resolve => setTimeout(resolve, delayBeforeStep1));
+
         const results1 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: clickAddSourceButtonOnPage });
         stepResult = results1[0]?.result;
-        if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 1 failed.');
+        if (!stepResult || typeof stepResult !== 'string' || stepResult.startsWith('Error:')) {
+             throw new Error(stepResult || 'Step 1: Add Source button failed or invalid response.');
+        }
         await new Promise(resolve => setTimeout(resolve, delayAfterStep1));
 
-        // Step 2
         const results2 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: clickWebsiteChipOnPage });
         stepResult = results2[0]?.result;
-         if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 2 failed.');
+        if (!stepResult || typeof stepResult !== 'string' || stepResult.startsWith('Error:')) {
+            throw new Error(stepResult || 'Step 2: Website chip failed or invalid response.');
+        }
         await new Promise(resolve => setTimeout(resolve, delayAfterStep2));
 
-        // Step 3
         const results3 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: fillUrlInputOnPage, args: [url] });
         stepResult = results3[0]?.result;
-        if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 3 failed.');
+         if (!stepResult || typeof stepResult !== 'string' || stepResult.startsWith('Error:')) {
+            throw new Error(stepResult || 'Step 3: Fill URL failed or invalid response.');
+        }
         await new Promise(resolve => setTimeout(resolve, delayAfterStep3));
 
-        // Step 4
         const results4 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: clickInsertButtonOnPage });
         stepResult = results4[0]?.result;
-        if (!stepResult || String(stepResult).startsWith('Error:')) throw new Error(stepResult || 'Step 4 failed.');
+         if (!stepResult || typeof stepResult !== 'string' || stepResult.startsWith('Error:')) {
+            throw new Error(stepResult || 'Step 4: Insert button failed or invalid response.');
+        }
         await new Promise(resolve => setTimeout(resolve, delayAfterStep4));
 
-        return true; // Success
+        return { success: true };
 
     } catch (error) {
-        // Return the specific error message from the failed step if available
-        return `Sequence Error: ${stepResult || error.message || 'Unknown error'}`;
+        const errorMessage = String(stepResult || error.message || 'Unknown sequence error');
+        return { success: false, error: `Sequence Error: ${errorMessage.substring(0, 150)}` };
     }
 }
 
-// --- Message Listener ---
+let isProcessing = false;
+let shouldStop = false;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
-    if (message.type === 'PROCESS_URL_LIST' && message.urls) {
+    if (message.type === 'PROCESS_URL_LIST' && (message.items || message.urls)) {
+        if (isProcessing) {
+            sendResponse({ error: "Processing already in progress." });
+            return false;
+        }
+        isProcessing = true;
+        shouldStop = false;
+
+        const hasItems = Array.isArray(message.items);
+        const dataToProcess = hasItems ? message.items : message.urls.map(url => ({ url }));
+        const totalCount = dataToProcess.length;
+
         (async () => {
-            let tabId = sender.tab?.id;
-            if (!tabId) {
-                 try {
-                    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-                    tabId = tabs[0]?.id;
-                 } catch (e) { /* handle error */ }
+            let tabId = null;
+            try {
+                const notebookTabs = await chrome.tabs.query({ url: "*://notebooklm.google.com/*" });
+                if (notebookTabs.length > 0) {
+                    const activeTabs = await chrome.tabs.query({ active: true, currentWindow: true });
+                    const activeNotebookTab = activeTabs.find(t => notebookTabs.some(nt => nt.id === t.id));
+                    tabId = activeNotebookTab ? activeNotebookTab.id : notebookTabs[0].id;
+                }
+            } catch (e) {
+                // Tab query error - log removed
             }
 
             if (!tabId) {
-                 try {
-                     chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: "Error: No active NotebookLM tab found." });
-                 } catch(e) {/* Popup likely closed */}
-                 return;
+                try {
+                    chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: "Error: NotebookLM tab not found.", isError: true });
+                } catch(e) {}
+                isProcessing = false;
+                return;
             }
 
-            const urlsToProcess = message.urls;
+            sendResponse({ status: "received" });
+
             let successCount = 0;
             let failCount = 0;
-            const totalUrls = urlsToProcess.length;
-            const delayBetweenUrls = 2500; // Increased delay slightly
+            const delayBetweenUrls = 2500;
 
-            for (let i = 0; i < totalUrls; i++) {
-                const currentUrl = urlsToProcess[i];
+            for (let i = 0; i < totalCount; i++) {
+                if (shouldStop) {
+                    try {
+                        chrome.runtime.sendMessage({ type: 'UPDATE_STATUS', text: `Stopped. Success: ${successCount}, Failed: ${failCount}`, isError: false });
+                    } catch(e) {}
+                    break;
+                }
+
+                const currentData = dataToProcess[i];
+                const currentUrl = currentData.url;
+                const originalIndex = hasItems ? currentData.index : -1;
+
+                const progressText = `Processing ${i + 1}/${totalCount}: ${currentUrl.substring(0, 40)}...`;
                 try {
-                    chrome.runtime.sendMessage({
-                        type: 'UPDATE_STATUS',
-                        text: `Processing ${i + 1}/${totalUrls}: ${currentUrl.substring(0, 40)}...`,
-                        isError: false
-                    });
-                } catch(e) {/* Popup likely closed */}
+                    chrome.runtime.sendMessage({ type: 'UPDATE_STATUS', text: progressText, isError: false });
+                } catch(e) {}
 
                 const result = await processSingleUrlSequence(tabId, currentUrl);
 
-                if (result === true) {
+                if (result.success) {
                     successCount++;
+                    if (hasItems && originalIndex !== -1) {
+                        try {
+                             chrome.runtime.sendMessage({
+                                 type: 'URL_PROCESS_SUCCESS',
+                                 itemIndex: originalIndex
+                             }, (response) => {
+                                  if (chrome.runtime.lastError && !String(chrome.runtime.lastError.message).includes("Receiving end does not exist")) {
+                                      // Send success error - log removed
+                                  }
+                             });
+                        } catch (e) {}
+                    }
                 } else {
                     failCount++;
-                     try {
-                         chrome.runtime.sendMessage({
-                             type: 'UPDATE_STATUS',
-                             text: `Failed ${i + 1}/${totalUrls}. Err: ${String(result).substring(0, 60)}...`,
-                             isError: true
-                            });
-                     } catch(e) {/* Popup likely closed */}
-                     // Optional: Add a longer delay after an error?
-                     // await new Promise(resolve => setTimeout(resolve, 1000));
+                    const failText = `Failed ${i + 1}/${totalCount}. Err: ${result.error}`;
+                    try {
+                        chrome.runtime.sendMessage({ type: 'UPDATE_STATUS', text: failText, isError: true });
+                    } catch(e) {}
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
 
-                if (i < totalUrls - 1) {
-                     await new Promise(resolve => setTimeout(resolve, delayBetweenUrls));
+                if (i < totalCount - 1 && !shouldStop) {
+                    await new Promise(resolve => setTimeout(resolve, delayBetweenUrls));
                 }
             }
 
-            const finalText = `Finished. Success: ${successCount}, Failed: ${failCount}`;
+            const finalText = shouldStop
+                ? `Stopped. Success: ${successCount}, Failed: ${failCount}`
+                : `Finished. Success: ${successCount}, Failed: ${failCount}`;
+            const finalIsError = failCount > 0 || shouldStop;
              try {
-                 chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: finalText });
-             } catch(e) {/* Popup likely closed */}
+                 chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETE', text: finalText, isError: finalIsError });
+             } catch(e) {}
+
+             isProcessing = false;
+             shouldStop = false;
 
         })();
-        return true; // Indicate async response
 
-    } else if (message.type === 'FILE_SELECTED_PING') {
-        // Acknowledge ping, no critical action needed. Helps keep popup alive.
-        sendResponse({ status: "Ping received by background" });
-        // No 'return true' here as sendResponse is called synchronously within this handler turn.
+        return true;
+    }
+    else if (message.type === 'STOP_PROCESSING') {
+        if (isProcessing) {
+            shouldStop = true;
+            sendResponse({ status: "stopping" });
+        } else {
+            sendResponse({ status: "not_running" });
+        }
+        return false;
     }
 
-    // If other synchronous message types were handled, return false or nothing.
-    // If only async types handled, could return true unconditionally, but being specific is better.
-    // For clarity, return true only if PROCESS_URL_LIST matched.
-    return (message.type === 'PROCESS_URL_LIST');
+    return false;
 });
 
-// --- Optional: Initial setup or other listeners ---
-// Example: Action button click listener (if using browserAction instead of pageAction)
-// chrome.action.onClicked.addListener((tab) => {
-//   // Logic to open popup or perform default action
-// });
+chrome.runtime.onInstalled.addListener(() => {
+  // Install/update message - log removed
+});
