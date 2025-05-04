@@ -27,10 +27,9 @@ function saveCurrentCsvData() {
     currentCsvData.meta.fields.unshift('is_success');
   }
   try {
-    // Papa.unparse に渡す前に is_success が boolean であることを確認
     const dataToSave = currentCsvData.data.map(row => ({
         ...row,
-        is_success: row.is_success === true // Ensure boolean true/false, not null/undefined
+        is_success: row.is_success === true
     }));
     const csvString = Papa.unparse({
         fields: currentCsvData.meta.fields,
@@ -50,20 +49,17 @@ function showStatus(message, type = '') {
     const statusDiv = document.getElementById('status');
     if (!statusDiv) return;
     statusDiv.textContent = message;
-    // ★ HTML構造に合わせてクラス名を調整 (CSS変数を使う場合)
-    statusDiv.className = ''; // Reset classes
+    statusDiv.className = '';
     if (type) {
-      statusDiv.classList.add(type); // Add 'error' or 'success' class
+      statusDiv.classList.add(type);
     }
     statusDiv.style.display = 'block';
 
     if (statusTimeout) {
         clearTimeout(statusTimeout);
     }
-    // エラーメッセージは自動で消さないように変更
     if (type !== 'error') {
         statusTimeout = setTimeout(() => {
-            // メッセージが変わっていなければ非表示にする
             if (statusDiv.textContent === message) {
                 statusDiv.style.display = 'none';
                 statusDiv.className = '';
@@ -124,13 +120,11 @@ function enableUI() {
 // --- Event Listener for Start Button (CSV Processing) ---
 if (startButton) {
     startButton.addEventListener('click', () => {
-        // ★★★ input 要素の存在チェックを追加 ★★★
         if (!columnNameInput || !statusDiv || !filterColumnInput || !filterValueInput) {
              alert("Popup Error: Required elements missing.");
              return;
         }
-        const columnName = columnNameInput.value.trim(); // URL Column Name
-        // ★★★ 追加: フィルター用の値を取得 ★★★
+        const columnName = columnNameInput.value.trim();
         const filterColumnName = filterColumnInput.value.trim();
         const filterValue = filterValueInput.value.trim();
 
@@ -138,7 +132,6 @@ if (startButton) {
             showStatus('Please enter the column name for URLs.', 'error');
             return;
         }
-        // ★★★ 追加: フィルターカラム名はあるのに値がない場合はエラー ★★★
         if (filterColumnName && !filterValue) {
             showStatus('Filter value is required when filter column is specified.', 'error');
             return;
@@ -171,7 +164,6 @@ if (startButton) {
                 skipEmptyLines: true,
                 complete: function(results) {
                     if (results.errors.length > 0) {
-                        // エラー内容を具体的に表示
                         const errorMessages = results.errors.map(e => `Row ${e.row}: ${e.message}`).join('\n');
                         console.error("CSV Parsing Errors:", results.errors);
                         showStatus(`Error parsing saved CSV:\n${errorMessages}`, 'error');
@@ -186,62 +178,50 @@ if (startButton) {
                     if (!results.meta.fields.includes('is_success')) {
                         results.meta.fields.unshift('is_success');
                     }
-                    currentCsvData = results; // Keep parsed data including meta
+                    currentCsvData = results;
 
-                    // URLカラムの存在チェック
                     if (!results.meta.fields.includes(columnName)) {
                         const available = results.meta.fields.join(', ');
                         showStatus(`Error: URL Column "${columnName}" not found. Available: ${available}`, 'error');
                         enableUI(); currentCsvData = null; return;
                     }
 
-                    // ★★★ 追加: フィルターカラムの存在チェック (指定されている場合) ★★★
                     if (filterColumnName && !results.meta.fields.includes(filterColumnName)) {
                         const available = results.meta.fields.join(', ');
                         showStatus(`Error: Filter Column "${filterColumnName}" not found. Available: ${available}`, 'error');
                         enableUI(); currentCsvData = null; return;
                     }
 
-                    // ★★★ 修正: フィルターロジックを強化 ★★★
                     const itemsToProcess = results.data
-                        .map((row, index) => ({ row, index })) // 元のインデックスを保持
+                        .map((row, index) => ({ row, index }))
                         .filter(item => {
                             const rowData = item.row;
-                            // 1. is_success が true でないかチェック
                             const isSuccess = rowData['is_success'] === true;
-                            if (isSuccess) return false; // 処理済みならスキップ
+                            if (isSuccess) return false;
 
-                            // 2. URLカラムの値が有効かチェック
                             const urlValue = rowData[columnName];
                             const isValidUrl = urlValue && typeof urlValue === 'string' && urlValue.trim() !== '' && !urlValue.startsWith('#');
-                            if (!isValidUrl) return false; // URLが無効ならスキップ
+                            if (!isValidUrl) return false;
 
-                            // 3. ★★★ 追加: フィルター条件のチェック (指定されている場合) ★★★
-                            let filterMatch = true; // デフォルトは true (フィルターしない場合)
+                            let filterMatch = true;
                             if (filterColumnName && filterValue) {
-                                // filterColumnName が rowData に存在するか確認
                                 if (Object.prototype.hasOwnProperty.call(rowData, filterColumnName)) {
                                     const columnData = rowData[filterColumnName];
-                                    // 値が存在し、かつ指定された値と一致するか (大文字小文字無視)
                                     filterMatch = (columnData != null) && (String(columnData).trim().toLowerCase() === filterValue.toLowerCase());
                                 } else {
-                                    // rowData に filterColumnName が存在しない場合は false とする
                                     filterMatch = false;
                                 }
                             }
-                            // すべての条件を満たす場合のみ true を返す
                             return filterMatch;
                         })
-                        .map(item => ({ // バックグラウンドに送るデータを整形
-                            index: item.index, // 元のCSVデータにおけるインデックス
+                        .map(item => ({
+                            index: item.index,
                             url: String(item.row[columnName]).trim()
                         }));
 
-                    // 重複URLを除外 (同じURLがフィルター条件を満たす複数の行にある場合、最初のものだけ処理)
                     const uniqueUrls = new Map();
                     itemsToProcess.forEach(item => { if (!uniqueUrls.has(item.url)) uniqueUrls.set(item.url, item); });
                     const finalItemsToProcess = Array.from(uniqueUrls.values());
-
 
                     if (finalItemsToProcess.length === 0) {
                          let msg = `No new valid URLs found in column "${columnName}"`;
@@ -251,7 +231,7 @@ if (startButton) {
                          msg += `.`;
                          showStatus(msg, 'success');
                          enableUI();
-                         currentCsvData = null; // No need to hold data if nothing to process
+                         currentCsvData = null;
                          return;
                     }
 
@@ -262,35 +242,32 @@ if (startButton) {
                     startMsg += `. Sending...`;
                     showStatus(startMsg, '');
 
-                    // バックグラウンドに処理対象リストを送信
                     chrome.runtime.sendMessage(
-                        { type: 'PROCESS_URL_LIST', items: finalItemsToProcess }, // items 配列を送信
+                        { type: 'PROCESS_URL_LIST', items: finalItemsToProcess },
                         (response) => {
                             if (chrome.runtime.lastError) {
                                  showStatus(`Error sending data: ${chrome.runtime.lastError.message}`, 'error');
                                  enableUI();
-                                 currentCsvData = null; // エラー時はデータを保持しない
+                                 currentCsvData = null;
                             } else if (response && response.error) {
                                  showStatus(`Error from background: ${response.error}`, 'error');
                                  enableUI();
-                                 currentCsvData = null; // エラー時はデータを保持しない
+                                 currentCsvData = null;
                             } else if (response && response.status === 'received') {
                                  showStatus('Processing started in background...', '');
-                                 // UIは無効のまま (disableUIが呼ばれている)
                             } else {
                                  showStatus('Background did not confirm start.', 'error');
                                  enableUI();
-                                 currentCsvData = null; // エラー時はデータを保持しない
+                                 currentCsvData = null;
                             }
                         }
                      );
                 },
                 error: function(error) {
-                     // PapaParse自体のエラー
                      console.error("PapaParse Error:", error);
                      showStatus(`CSV parsing failed: ${error.message}`, 'error');
                      enableUI();
-                     currentCsvData = null; // パース失敗時はデータを保持しない
+                     currentCsvData = null;
                 }
             });
         });
@@ -305,12 +282,10 @@ if (startTextHtmlButton) {
         if (!inputText) { showStatus('Paste URLs or HTML.', 'error'); return; }
 
         showStatus('Processing pasted text/HTML...', '');
-        disableUI(); // Disable UI including options button
+        disableUI();
 
         let urls = [];
-        // HTMLリンクの抽出を試みる
         try {
-            // DOMParserを使う方がより安全で確実
             const parser = new DOMParser();
             const doc = parser.parseFromString(inputText, 'text/html');
             const anchors = doc.querySelectorAll('a');
@@ -320,28 +295,23 @@ if (startTextHtmlButton) {
                      const href = anchor.getAttribute('href');
                      if (href && href.trim() !== '' && !href.startsWith('#') && !href.startsWith('javascript:')) {
                          try {
-                             // 相対URLを絶対URLに変換 (ベースURLが必要な場合があるが、ここでは単純化)
                              urls.push(new URL(href.trim(), 'https://example.com').href);
                          } catch (e) {
-                            // 無効なURLは無視
                             console.warn(`Invalid URL skipped: ${href}`, e);
                          }
                      }
                  });
-                 urls = [...new Set(urls)]; // 重複削除
+                 urls = [...new Set(urls)];
             }
         } catch (e) {
             console.error("Error parsing HTML for links:", e);
-            // HTMLパースに失敗した場合でも、次のテキスト処理に進む
         }
 
-        // URLが抽出できなかった、またはHTMLではなかった場合、テキストとして処理
         if (urls.length === 0) {
-            urls = inputText.split(/[\s,;\t\n"']+/).map(u => u.trim()).filter(u => u); // 区切り文字を増やし、空要素を削除
-             // 簡単なURL形式チェックを追加（ドットが含まれるか、特定文字で始まらないか）
+            urls = inputText.split(/[\s,;\t\n"']+/).map(u => u.trim()).filter(u => u);
             urls = urls.filter(u => u.includes('.') && !u.startsWith('#') && !u.startsWith('javascript:'));
-            urls = urls.map(u => (!/^(https?:\/\/)/i.test(u) ? 'https://' + u : u)); // http(s):// がなければ追加
-            urls = urls.filter(u => { // 最終的なURL妥当性チェック
+            urls = urls.map(u => (!/^(https?:\/\/)/i.test(u) ? 'https://' + u : u));
+            urls = urls.filter(u => {
                 try {
                     new URL(u);
                     return true;
@@ -349,9 +319,8 @@ if (startTextHtmlButton) {
                     return false;
                  }
              });
-            urls = [...new Set(urls)]; // 重複削除
+            urls = [...new Set(urls)];
         }
-
 
         if (urls.length === 0) {
              showStatus(`No valid URLs found in pasted content.`, 'error');
@@ -359,9 +328,8 @@ if (startTextHtmlButton) {
         }
 
         showStatus(`Found ${urls.length} URLs from text/HTML. Sending...`, '');
-        // テキスト/HTMLからの場合はインデックス情報がないため、URLリストのみ送信
-         chrome.runtime.sendMessage(
-             { type: 'PROCESS_URL_LIST', urls: urls }, // itemsではなくurlsを送信
+        chrome.runtime.sendMessage(
+             { type: 'PROCESS_URL_LIST', urls: urls },
              (response) => {
                   if (chrome.runtime.lastError) { showStatus(`Send Error: ${chrome.runtime.lastError.message}`, 'error'); enableUI(); }
                   else if (response && response.error) { showStatus(`BG Error: ${response.error}`, 'error'); enableUI(); }
@@ -380,7 +348,7 @@ if (stopButton) {
         chrome.runtime.sendMessage({ type: 'STOP_PROCESSING' }, (response) => {
              if (chrome.runtime.lastError) { showStatus(`Stop Error: ${chrome.runtime.lastError.message}`, 'error'); stopButton.disabled = false; }
              else if (response && response.status === 'stopping') { showStatus('Stop request sent...', ''); }
-             else if (response && response.status === 'not_running') { showStatus('Not running.', 'success'); enableUI(); currentCsvData = null;} // 停止したらデータ不要
+             else if (response && response.status === 'not_running') { showStatus('Not running.', 'success'); enableUI(); currentCsvData = null;}
              else { showStatus('Stop response unclear.', 'error'); stopButton.disabled = false; }
         });
     });
