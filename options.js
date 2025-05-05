@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
   loadSettings();
+  loadLastProcessedUrl(); // 最後に処理したURLを読み込む
 
   const csvFileInput = document.getElementById('csvFileInput');
   const fileInfoDiv = document.getElementById('fileInfo');
@@ -307,3 +308,22 @@ function showStatus(message, type) {
     statusDiv.style.display = 'none';
   }, 3000);
 }
+
+// 最後に処理したURLを読み込んで表示する関数
+function loadLastProcessedUrl() {
+  chrome.storage.local.get(['lastProcessedUrl'], function(result) {
+    if (result.lastProcessedUrl) {
+      const apiUrlInput = document.getElementById('apiUrl');
+      if (apiUrlInput) {
+        apiUrlInput.value = result.lastProcessedUrl;
+      }
+    }
+  });
+}
+
+// URL_PROCESS_SUCCESSメッセージを受信したときに処理済みURLを更新
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'URL_PROCESS_SUCCESS') {
+    loadProcessedUrls();
+  }
+});

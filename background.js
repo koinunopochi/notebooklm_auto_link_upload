@@ -52,6 +52,19 @@ async function processSingleUrlSequence(tabId, url) {
     const delayAfterStep4 = 2000;
 
     try {
+        // 最後に処理したURLを保存
+        await new Promise((resolve, reject) => {
+            chrome.storage.local.set({ lastProcessedUrl: url }, () => {
+                if (chrome.runtime.lastError) {
+                    console.error("Error saving URL:", chrome.runtime.lastError);
+                    reject(chrome.runtime.lastError);
+                } else {
+                    console.log("URL saved successfully:", url);
+                    resolve();
+                }
+            });
+        });
+
         await new Promise(resolve => setTimeout(resolve, delayBeforeStep1));
 
         const results1 = await chrome.scripting.executeScript({ target: { tabId: tabId }, func: clickAddSourceButtonOnPage });
