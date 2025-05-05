@@ -10,6 +10,23 @@ document.addEventListener('DOMContentLoaded', function() {
   const apiResultDiv = document.getElementById('apiResult');
   const apiResultHeader = document.getElementById('apiResultHeader');
   const apiResultBody = document.getElementById('apiResultBody');
+  const saveColumnNameButton = document.getElementById('saveColumnName');
+
+  if (saveColumnNameButton) {
+    saveColumnNameButton.addEventListener('click', function() {
+      const columnName = document.getElementById('columnName').value.trim() || 'URL';
+      chrome.storage.local.set({
+        columnName: columnName
+      }, function() {
+        if (chrome.runtime.lastError) {
+          console.error("Error saving column name:", chrome.runtime.lastError);
+          showStatus('URL列設定の保存中にエラーが発生しました', 'error');
+        } else {
+          showStatus('URL列設定を保存しました', 'success');
+        }
+      });
+    });
+  }
 
   if (fetchDataButton) {
     fetchDataButton.addEventListener('click', async function() {
@@ -223,93 +240,56 @@ function saveCSVData() {
 }
 
 function loadSettings() {
-  chrome.storage.local.get(['columnName', 'csvData'], function(result) {
+  chrome.storage.local.get(['columnName'], function(result) {
     if (chrome.runtime.lastError) {
       console.error("Error loading settings:", chrome.runtime.lastError);
       showStatus('設定の読み込み中にエラーが発生しました', 'error');
       return;
     }
 
+    const columnNameInput = document.getElementById('columnName');
     if (result.columnName) {
-      document.getElementById('columnName').value = result.columnName;
+      columnNameInput.value = result.columnName;
     } else {
-      document.getElementById('columnName').value = 'URL';
+      columnNameInput.value = 'URL';
     }
-    if (result.csvData) {
-      Papa.parse(result.csvData, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          if (results.errors.length > 0) {
-            showStatus('保存されたCSVデータの解析中にエラーが発生しました', 'error');
-            console.error("PapaParse Errors on load:", results.errors);
-            return;
-          }
 
-          // is_success列の処理とヘッダーリストの整合性を確認
-          results.data = addIsSuccessColumn(results.data);
-          if (results.meta.fields && !results.meta.fields.includes('is_success')) {
-             // is_successを先頭に追加する
-            results.meta.fields.unshift('is_success');
-          }
+    // CSVデータの読み込み
+    chrome.storage.local.get(['csvData'], function(result) {
+      if (chrome.runtime.lastError) {
+        console.error("Error loading CSV data:", chrome.runtime.lastError);
+        return;
+      }
 
-          window.csvData = results;
-          updatePreview();
-          
-          if (results.meta.fields && results.meta.fields.length > 0) {
-            const columnNameInput = document.getElementById('columnName');
-            if (!columnNameInput.value || columnNameInput.value === 'URL') {
-              const urlColumn = results.meta.fields.find(h => h.toLowerCase().includes('url'));
-              if (urlColumn) {
-                columnNameInput.value = urlColumn;
-              }
+      if (result.csvData) {
+        Papa.parse(result.csvData, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            if (results.errors.length > 0) {
+              showStatus('保存されたCSVデータの解析中にエラーが発生しました', 'error');
+              console.error("PapaParse Errors on load:", results.errors);
+              return;
             }
+
+            // is_success列の処理とヘッダーリストの整合性を確認
+            results.data = addIsSuccessColumn(results.data);
+            if (results.meta.fields && !results.meta.fields.includes('is_success')) {
+              results.meta.fields.unshift('is_success');
+            }
+
+            window.csvData = results;
+            updatePreview();
+          },
+          error: function(error) {
+            showStatus(`保存されたCSVデータの解析中にエラーが発生しました: ${error.message}`, 'error');
           }
-        },
-        error: function(error) {
-          showStatus(`保存されたCSVデータの解析中にエラーが発生しました: ${error.message}`, 'error');
-        }
-      });
-    } else {
-        // 保存されたCSVデータがない場合はプレビューを隠す
+        });
+      } else {
         document.getElementById('csvPreview').style.display = 'none';
-    }
+      }
+    });
   });
-}
-
-function saveSettings() {
-  const columnName = document.getElementById('columnName').value.trim() || 'URL'; // 空の場合のデフォルト
-  const csvFile = document.getElementById('csvFileInput').files[0];
-
-  if (window.csvData) {
-      chrome.storage.local.set({
-          columnName: columnName,
-          csvData: Papa.unparse(window.csvData) // 現在のデータを文字列化して保存
-      }, function() {
-          if (chrome.runtime.lastError) {
-              console.error("Error saving settings:", chrome.runtime.lastError);
-              showStatus('設定の保存中にエラーが発生しました', 'error');
-          } else {
-              showStatus('設定を保存しました', 'success');
-          }
-      });
-  } else if (csvFile) {
-      showStatus('CSVデータが読み込まれていません。ファイルを再選択するか、読み込みが完了するまでお待ちください。', 'error');
-  } else {
-       chrome.storage.local.set({
-          columnName: columnName
-       }, function() {
-           if (chrome.runtime.lastError) {
-               console.error("Error saving settings (no data):", chrome.runtime.lastError);
-               showStatus('設定の保存中にエラーが発生しました', 'error');
-           } else {
-              showStatus('設定を保存しました (CSVデータなし)', 'success');
-              document.getElementById('csvPreview').style.display = 'none';
-              window.csvData = null;
-              chrome.storage.local.remove('csvData');
-           }
-       });
-  }
 }
 
 function showStatus(message, type) {
