@@ -79,6 +79,15 @@
       <label for="columnNameInput">URLが含まれる列名:</label>
       <input type="text" id="columnNameInput" value="URL">
 
+      <div class="input-group">
+          <label for="filterColumnInput">Filter Column:</label>
+          <input type="text" id="filterColumnInput" placeholder="e.g., Category (Optional)" value="件名">
+      </div>
+      <div class="input-group">
+          <label for="filterValueInput">Filter Value:</label>
+          <input type="text" id="filterValueInput" placeholder="e.g., AI (Requires Column)">
+      </div>
+
       <button id="startButton" class="btn btn-primary">Start Upload from Saved Data</button>
       <button id="stopButton" class="btn" style="display: none;">Stop Processing</button>
       <!-- Options button will be inserted here by popup.js -->
