@@ -27,28 +27,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = await response.json();
         
         if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
-          // ヘッダー行を表示
+          // ヘッダー行を取得
           const headers = data.data[0];
-          let headerHtml = '<tr>';
-          headerHtml += '<th class="row-number">No</th>';
-          headers.forEach(header => {
-            headerHtml += `<th>${header}</th>`;
-          });
-          headerHtml += '</tr>';
-          apiResultHeader.innerHTML = headerHtml;
+          
+          // データをCSV形式に変換
+          const csvData = {
+            data: data.data.slice(1).map(row => {
+              const obj = {};
+              headers.forEach((header, index) => {
+                obj[header] = row[index];
+              });
+              return obj;
+            }),
+            meta: {
+              fields: headers
+            }
+          };
 
-          // データ行を表示
-          let bodyHtml = '';
-          data.data.slice(1).forEach((row, index) => {
-            bodyHtml += '<tr>';
-            bodyHtml += `<td class="row-number">${index + 1}</td>`;
-            row.forEach(cell => {
-              bodyHtml += `<td>${cell || ''}</td>`;
-            });
-            bodyHtml += '</tr>';
-          });
-          apiResultBody.innerHTML = bodyHtml;
-          apiResultDiv.style.display = 'block';
+          // is_success列を追加
+          csvData.data = addIsSuccessColumn(csvData.data);
+          if (!csvData.meta.fields.includes('is_success')) {
+            csvData.meta.fields.unshift('is_success');
+          }
+
+          // データを保存してプレビューを更新
+          window.csvData = csvData;
+          updatePreview();
+          saveCSVData();
           showStatus('データの取得に成功しました', 'success');
         } else {
           throw new Error('データの形式が正しくありません');
@@ -56,7 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (error) {
         console.error('Error fetching data:', error);
         showStatus(`データの取得中にエラーが発生しました: ${error.message}`, 'error');
-        apiResultDiv.style.display = 'none';
       }
     });
   }
