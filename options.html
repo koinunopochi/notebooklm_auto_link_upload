@@ -247,6 +247,31 @@
     .details-icon.rotated {
       transform: rotate(180deg);
     }
+
+    .data-source {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+
+    .data-source h3 {
+      color: #2c3e50;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 1.2em;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    .data-source:last-child {
+      margin-bottom: 0;
+    }
+
+    .data-source button {
+      margin-top: 15px;
+    }
   </style>
 </head>
 <body>
@@ -254,25 +279,25 @@
     <h1>NotebookLM URL Uploader 設定</h1>
     
     <div class="section">
-      <h2>URL設定</h2>
+      <h2>データ追加</h2>
       
-      <div class="url-settings">
+      <div class="data-source">
+        <h3>CSVファイルから追加</h3>
+        <label for="csvFileInput">CSVファイルをアップロード:</label>
+        <input type="file" id="csvFileInput" accept=".csv">
+        <div id="fileInfo" class="file-info">ファイルが選択されていません</div>
+      </div>
+
+      <div class="data-source">
+        <h3>URLから追加</h3>
         <label for="apiUrl">API URL:</label>
         <input type="text" id="apiUrl">
         <button id="fetchData">URLからデータを取得</button>
       </div>
-      
-      <div id="apiResult" class="csv-preview" style="display: none;">
-        <h3>取得結果</h3>
-        <table class="csv-table">
-          <thead id="apiResultHeader"></thead>
-          <tbody id="apiResultBody"></tbody>
-        </table>
-      </div>
     </div>
 
     <div class="section">
-      <h2>CSV設定</h2>
+      <h2>読み込み設定</h2>
       
       <div class="column-settings">
         <label for="columnName">URL列の名前:</label>
@@ -282,22 +307,20 @@
       <div class="result-settings">
         <span class="result-status">処理結果を記録する列: is_success</span>
       </div>
-      
-      <label for="csvFileInput">CSVファイルをアップロード:</label>
-      <input type="file" id="csvFileInput" accept=".csv">
-      <div id="fileInfo" class="file-info">ファイルが選択されていません</div>
+    </div>
+
+    <div class="section">
+      <h2>データプレビュー</h2>
       
       <div id="csvPreview" class="csv-preview" style="display: none;">
-        <h3>CSVプレビュー</h3>
         <table class="csv-table">
           <thead id="csvPreviewHeader"></thead>
           <tbody id="csvPreviewBody"></tbody>
         </table>
       </div>
-      
-      <button id="saveSettings">設定を保存</button>
     </div>
 
+    <button id="saveSettings">設定を保存</button>
     <div id="status"></div>
   </div>
 
