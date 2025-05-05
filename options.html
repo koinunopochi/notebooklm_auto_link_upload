@@ -254,6 +254,24 @@
     <h1>NotebookLM URL Uploader 設定</h1>
     
     <div class="section">
+      <h2>URL設定</h2>
+      
+      <div class="url-settings">
+        <label for="apiUrl">API URL:</label>
+        <input type="text" id="apiUrl">
+        <button id="fetchData">データを取得</button>
+      </div>
+      
+      <div id="apiResult" class="csv-preview" style="display: none;">
+        <h3>取得結果</h3>
+        <table class="csv-table">
+          <thead id="apiResultHeader"></thead>
+          <tbody id="apiResultBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
       <h2>CSV設定</h2>
       
       <div class="column-settings">

@@ -6,6 +6,60 @@ document.addEventListener('DOMContentLoaded', function() {
   const csvPreviewDiv = document.getElementById('csvPreview');
   const csvPreviewHeader = document.getElementById('csvPreviewHeader');
   const csvPreviewBody = document.getElementById('csvPreviewBody');
+  const fetchDataButton = document.getElementById('fetchData');
+  const apiResultDiv = document.getElementById('apiResult');
+  const apiResultHeader = document.getElementById('apiResultHeader');
+  const apiResultBody = document.getElementById('apiResultBody');
+
+  if (fetchDataButton) {
+    fetchDataButton.addEventListener('click', async function() {
+      const apiUrl = document.getElementById('apiUrl').value.trim();
+      if (!apiUrl) {
+        showStatus('API URLを入力してください', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (data.status === 'success' && Array.isArray(data.data) && data.data.length > 0) {
+          // ヘッダー行を表示
+          const headers = data.data[0];
+          let headerHtml = '<tr>';
+          headerHtml += '<th class="row-number">No</th>';
+          headers.forEach(header => {
+            headerHtml += `<th>${header}</th>`;
+          });
+          headerHtml += '</tr>';
+          apiResultHeader.innerHTML = headerHtml;
+
+          // データ行を表示
+          let bodyHtml = '';
+          data.data.slice(1).forEach((row, index) => {
+            bodyHtml += '<tr>';
+            bodyHtml += `<td class="row-number">${index + 1}</td>`;
+            row.forEach(cell => {
+              bodyHtml += `<td>${cell || ''}</td>`;
+            });
+            bodyHtml += '</tr>';
+          });
+          apiResultBody.innerHTML = bodyHtml;
+          apiResultDiv.style.display = 'block';
+          showStatus('データの取得に成功しました', 'success');
+        } else {
+          throw new Error('データの形式が正しくありません');
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        showStatus(`データの取得中にエラーが発生しました: ${error.message}`, 'error');
+        apiResultDiv.style.display = 'none';
+      }
+    });
+  }
 
   if (csvFileInput) {
     csvFileInput.addEventListener('change', function(event) {
